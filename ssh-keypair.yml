@@ -5,67 +5,61 @@
   connection: local
 
   tasks:
-  - name: Show key_action
-    debug:
-      var: key_action
 
-  - name: Show user_public_key
-    debug:
-      var: user_public_key
+    - name: Show key_action
+      ansible.builtin.debug:
+        var: key_action
 
-  - name: Show JSON representation
-    debug:
-      msg: "{{ user_public_key | to_json }}"
+    - name: Show keypair_name
+      ansible.builtin.debug:
+        var: keypair_name
 
-  - name: Test regex
-    debug:
-      msg: "{{ (user_public_key | trim) is match('^(ssh-rsa|ssh-ed25519|ecdsa-sha2-\\S+)\\s+\\S+') }}"
+    - name: Show user_public_key
+      ansible.builtin.debug:
+        var: user_public_key
+      when: key_action == "import"
 
-  - name: Validate pasted public key format
-    assert:
-      that:
-        - (user_public_key | trim) is match('^(ssh-rsa|ssh-ed25519|ecdsa-sha2-\\S+)\\s+\\S+')
-      fail_msg: "Invalid public key"
+    - name: Validate pasted public key format
+      ansible.builtin.assert:
+        that:
+          - (user_public_key | trim) is match('^(ssh-rsa|ssh-ed25519|ecdsa-sha2-\S+)\s+\S+')
+        fail_msg: "That doesn't look like a valid SSH public key."
+      when: key_action == "import"
 
-  - name: Before OpenStack module
-    debug:
-      msg: "Calling OpenStack module..."
-  - name: Show OpenStack environment variables
-    ansible.builtin.shell: env | grep '^OS_'
-    register: os_env
-    changed_when: false
-  - debug:
-      var: os_env.stdout_lines
-  - name: Check clouds.yaml
-  ansible.builtin.shell: |
-    find / -name clouds.yaml 2>/dev/null
-  register: clouds
-  changed_when: false
+    - name: Show injected OpenStack environment variables
+      ansible.builtin.shell: |
+        env | grep '^OS_' | sort
+      register: os_env
+      changed_when: false
 
-  - debug:
-      var: clouds.stdout_lines
-      
-  - name: Import user's existing public key
-    openstack.cloud.keypair:
-      state: present
-      name: "{{ keypair_name }}"
-      public_key: "{{ user_public_key }}"
-    when: key_action == "import"
-  - name: Import finished
-    debug:
-      msg: "Import completed."
-      
-  - name: Generate a new keypair in OpenStack
-    openstack.cloud.keypair:
-      state: present
-      name: "{{ keypair_name }}"
-    register: kp
-    no_log: true
-    when: key_action == "create"
+    - name: Display OpenStack environment variables
+      ansible.builtin.debug:
+        var: os_env.stdout_lines
 
-  - name: Show private key (save this now — it cannot be retrieved again)
-    ansible.builtin.debug:
-      msg: "{{ kp.keypair.private_key }}"
-    when:
-      - key_action == "create"
-      - kp.keypair.private_key is defined
+    - name: Import user's existing public key
+      openstack.cloud.keypair:
+        state: present
+        name: "{{ keypair_name }}"
+        public_key: "{{ user_public_key }}"
+      when: key_action == "import"
+
+    - name: Generate a new keypair in OpenStack
+      openstack.cloud.keypair:
+        state: present
+        name: "{{ keypair_name }}"
+      register: kp
+      no_log: true
+      when: key_action == "create"
+
+    - name: Display generated private key
+      ansible.builtin.debug:
+        msg: |
+          ============================================
+          SAVE THIS PRIVATE KEY NOW
+          It cannot be retrieved again.
+          ============================================
+
+          {{ kp.keypair.private_key }}
+      when:
+        - key_action == "create"
+        - kp.keypair.private_key is defined
