@@ -30,6 +30,20 @@
   - name: Before OpenStack module
     debug:
       msg: "Calling OpenStack module..."
+  - name: Show OpenStack environment variables
+    ansible.builtin.shell: env | grep '^OS_'
+    register: os_env
+    changed_when: false
+  - debug:
+      var: os_env.stdout_lines
+  - name: Check clouds.yaml
+  ansible.builtin.shell: |
+    find / -name clouds.yaml 2>/dev/null
+  register: clouds
+  changed_when: false
+
+  - debug:
+      var: clouds.stdout_lines
       
   - name: Import user's existing public key
     openstack.cloud.keypair:
