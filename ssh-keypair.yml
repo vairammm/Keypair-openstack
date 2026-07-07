@@ -27,13 +27,20 @@
         - (user_public_key | trim) is match('^(ssh-rsa|ssh-ed25519|ecdsa-sha2-\\S+)\\s+\\S+')
       fail_msg: "Invalid public key"
 
+  - name: Before OpenStack module
+    debug:
+      msg: "Calling OpenStack module..."
+      
   - name: Import user's existing public key
     openstack.cloud.keypair:
       state: present
       name: "{{ keypair_name }}"
       public_key: "{{ user_public_key }}"
     when: key_action == "import"
-
+  - name: Import finished
+    debug:
+      msg: "Import completed."
+      
   - name: Generate a new keypair in OpenStack
     openstack.cloud.keypair:
       state: present
