@@ -39,6 +39,7 @@
     - name: Import user's existing public key
       openstack.cloud.keypair:
         state: present
+        validate_certs: false
         name: "{{ keypair_name }}"
         public_key: "{{ user_public_key }}"
       when: key_action == "import"
@@ -46,6 +47,7 @@
     - name: Generate a new keypair in OpenStack
       openstack.cloud.keypair:
         state: present
+        validate_certs: false
         name: "{{ keypair_name }}"
       register: kp
       no_log: true
