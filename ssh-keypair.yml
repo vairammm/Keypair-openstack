@@ -5,15 +5,15 @@
   connection: local
 
   tasks:
-  - name: Ensure public key is provided for import
-    ansible.builtin.assert:
-      that:
-        - user_public_key is defined
-        - user_public_key | trim | length > 0
-        - (user_public_key | trim) is match('^(ssh-rsa|ssh-ed25519|ecdsa-sha2-\S+)\s+\S+')
-      fail_msg: |
-        A valid SSH public key is required when importing a keypair.
-    when: key_action == "import"
+    - name: Ensure public key is provided for import
+      ansible.builtin.assert:
+        that:
+          - user_public_key is defined
+          - user_public_key | trim | length > 0
+          - (user_public_key | trim) is match('^(ssh-rsa|ssh-ed25519|ecdsa-sha2-\S+)\s+\S+')
+        fail_msg: |
+          A valid SSH public key is required when importing a keypair.
+      when: key_action == "import"
 
     - name: Import user's existing public key
       openstack.cloud.keypair:
